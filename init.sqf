@@ -49,72 +49,113 @@ player addAction ["View icons", {
 	};
 }, nil, 10, false, true];
 
-man addAction ["Revive soldier", {
-	params ["_target", "_caller", "_actionId", "_arguments"];
-	_caller playMove "AinvPknlMstpSnonWnonDnon_medic1";
-	_caller playMove "AinvPknlMstpSnonWnonDnon_medic2";
-	_caller playMove "AinvPknlMstpSnonWnonDnon_medicEnd";
-	sleep 10;
-	_target setUnconscious false;
-	_target setCaptive false;
-	_target allowDamage true;
-	_target setDamage 0;
-}, nil, 1000, false, true, "", "lifeState _target == 'INCAPACITATED'"];
-
-addRevive = {
-_this addEventHandler ["HandleDamage", {
-	params ["_unit", "_selection", "_damage", "_source", "_projectile", "_hitIndex", "_instigator", "_hitPoint"];
-	
-	if (_damage >= 0.99) then {
-		if !(lifeState _unit == "INCAPACITATED") then {
-			_unit setUnconscious true;
-			_unit setCaptive true;
-			_unit allowDamage false;
-			[_unit, 
-			"Revive soldier",
-			"a3\missions_f_oldman\data\img\holdactions\holdaction_talk_ca.paa",
-			"a3\ui_f\data\igui\cfg\actions\ico_cpt_start_on_ca.paa",
-			"lifeState _target == 'INCAPACITATED' && _this == player && {_target distance _this < 3}",
-			"true",
-			{ systemChat "Begin action"; systemChat str _this;
-				(_this # 1) playMove "AinvPknlMstpSnonWnonDnon_medic1";
-				(_this # 1) playMove "AinvPknlMstpSnonWnonDnon_medic2";
-				(_this # 1) playMove "AinvPknlMstpSnonWnonDnon_medic3";
-			},
-			nil,
-			{ systemChat "End action"; systemChat str _this; (_this # 0) setDamage 0; (_this # 0) setUnconscious false; (_this # 0) setVariable ["DE_CAN_REVIVE", false]; (_this # 0) allowDamage true; (_this # 1) playMoveNow "AinvPknlMstpSnonWnonDnon_medicEnd"; },
-			{ systemChat "Action interrupted"; systemChat str _this; (_this # 1) playMoveNow "AinvPknlMstpSnonWnonDnon_medicEnd" },
-			nil,
-			14,
-			1000,
-			true,
-			true,
-			true] call BIS_fnc_holdActionAdd;
-			_unit setVariable ["DE_CAN_REVIVE", true];
-		};
-		_damage = 0;
-	};
-	_damage;
-}];
+addPlayerClickRevive = {
+	_this addAction ["Revive soldier", {
+		params ["_target", "_caller", "_actionId", "_arguments"];
+		_caller playMove "AinvPknlMstpSnonWnonDnon_medic1";
+		_caller playMove "AinvPknlMstpSnonWnonDnon_medic2";
+		_caller playMove "AinvPknlMstpSnonWnonDnon_medicEnd";
+		sleep 10;
+		[_target, false] call unitSetReviveState;
+		_target setDamage 0;
+	}, nil, 1000, false, true, "", "lifeState _target == 'INCAPACITATED'"];
 };
 
-[man, man_1, man_2] apply { _x call addRevive};
-[man, man_1, man_2] apply { _x setDamage 0.99; _x setPos ((getPos _x) vectorAdd [0,0,3]) };
+addPlayerHoldRevive = {
+	[_this, 
+	"Revive soldier",
+	"a3\ui_f\data\igui\cfg\holdactions\holdaction_revivemedic_ca.paa",
+	"a3\ui_f\data\igui\cfg\holdactions\holdaction_revive_ca.paa",
+	"lifeState _target == 'INCAPACITATED' && _this == player && {_target distance _this < 3}",
+	"true",
+	{
+		(_this # 1) playMove "AinvPknlMstpSnonWnonDnon_medic1";
+		(_this # 1) playMove "AinvPknlMstpSnonWnonDnon_medic2";
+		(_this # 1) playMove "AinvPknlMstpSnonWnonDnon_medic3";
+	},
+	nil,
+	{ [_this # 0, false] call unitSetReviveState; (_this # 0) setDamage 0; (_this # 1) playMoveNow "AinvPknlMstpSnonWnonDnon_medicEnd"; },
+	{ (_this # 1) playMoveNow "AinvPknlMstpSnonWnonDnon_medicEnd" },
+	nil,
+	14,
+	1000,
+	true,
+	true,
+	true] call BIS_fnc_holdActionAdd;
+};
+
+addRevive = {
+	_this addEventHandler ["HandleDamage", {
+		params ["_unit", "_selection", "_damage", "_source", "_projectile", "_hitIndex", "_instigator", "_hitPoint"];
+		if (_damage >= 0.99) then {
+			if !(lifeState _unit == "INCAPACITATED") then {
+				[_unit, true] call unitSetReviveState;
+				_unit call addPlayerHoldRevive;
+				_unit setVariable ["DE_TIME_KILLED", time];
+			};
+			_damage = 0;
+		};
+		_damage;
+	}];
+};
+
+unitSetReviveState = {
+	params ["_unit", "_revive"];
+	if (_revive) then {
+		_unit setUnconscious true;
+		_unit setCaptive true;
+		_unit allowDamage false;
+	} else {
+		_unit setUnconscious false;
+		_unit setCaptive false;
+		_unit allowDamage true;
+	};
+};
+
+unitReviveBody = {
+	params ["_unit", "_body"];
+	private ["_relativeDir", "_pos", "_leader"];
+	_relativeDir = _body getDir _unit;
+	//_pos = _body getPos [1, _relativeDir];
+	_pos = getPos _body;
+	_unit doMove _pos;
+	//_unit setPosATL _pos;
+	waitUntil {moveToCompleted _unit};
+	_unit setFormDir (_unit getDir _body);
+	doStop _unit; //stop here prevents unit from making radio messages after doMove
+	_unit playMove "AinvPknlMstpSnonWnonDnon_medic1";
+	_unit playMove "AinvPknlMstpSnonWnonDnon_medic2";
+	sleep 11.764;
+	_unit playMoveNow "AinvPknlMstpSnonWnonDnon_medicEnd";
+	[_body, false] call unitSetReviveState;
+	_body setDamage 0;
+	_leader = leader _unit;
+	_unit setFormDir (_unit getDir _leader);
+	_unit doFollow _leader;
+};
+unitReviveBodyAction = {
+	[_this # 0, _this # 3] call unitReviveBody;
+};
 
 [] spawn {
-	private "_deadMan";
+	private ["_deadMan","_actionIndex"];
 	while {true} do {
 		{
 			if (lifeState _x == "INCAPACITATED") then {
 				_deadMan = _x;
 				(units player) apply {
-					if (isNil {_x getVariable (str _deadMan)}) then {
-						if (_x distance _deadMan < 50) then {
-							if !(isPlayer _x) then {
+					if !(isPlayer _x) then {
+						if (isNil {_x getVariable (str _deadMan)}) then {
+							if (_x distance _deadMan < 50) then {
 								systemChat format ["Creating revive for %1", name _deadMan];
-								_x addAction [format ["Revive %1", name _deadMan], {
-								}, nil, 1000, false, true, "", "!(isPlayer _this)"];
-								_x setVariable [str _deadMan, _deadMan];
+								_actionIndex = _x addAction [format ["Revive %1", name _deadMan], unitReviveBodyAction, _deadMan, 1000, false, true, "", "!(isPlayer _this)"];
+								_x setVariable [str _deadMan, _actionIndex];
+							};
+						} else {
+							if (_x distance _deadMan > 50) then {
+								systemChat "removed";
+								_x removeAction (_x getVariable (str _deadMan));
+								_x setVariable [str _deadMan, nil];
 							};
 						};
 					};
@@ -124,3 +165,7 @@ _this addEventHandler ["HandleDamage", {
 		sleep 1;
 	};
 };
+
+[man, man_1, man_2] apply { _x call addRevive};
+man call addPlayerClickRevive;
+[man, man_1, man_2] apply { _x setDamage 0.99; _x setPos ((getPos _x) vectorAdd [0,0,3]) };
