@@ -58,7 +58,7 @@ addPlayerClickRevive = {
 		sleep 10;
 		[_target, false] call unitSetReviveState;
 		_target setDamage 0;
-	}, nil, 1000, false, true, "", "lifeState _target == 'INCAPACITATED'"];
+	}, nil, 1000, false, true, "", "lifeState _target == 'INCAPACITATED' && _this == player"];
 };
 
 addPlayerHoldRevive = {
@@ -140,6 +140,18 @@ unitReviveBodyAction = {
 	(_this # 0) removeAction (_this # 2);
 };
 
+unitSelfRevive = {
+		_this setVariable ["DE_REVIVING", true];
+		sleep 5;
+		_this setVariable ["DE_REVIVING", nil];
+		_this setUnconscious false;
+		sleep 5;
+		_this playMove "AinvPpneMstpSlayWnonDnon_medic";
+		sleep 4;
+		[_this, false] call unitSetReviveState;
+		_this setDamage 0;
+};
+
 [] spawn {
 	private ["_deadMan","_actionIndex"];
 	while {true} do {
@@ -163,6 +175,18 @@ unitReviveBodyAction = {
 						};
 					};
 				};
+			} else {
+				_deadMan = _x;
+				if (lifeState _x == "HEALTHY" || lifeState _x == "INJURED") then {
+					(units player) apply {
+						if !(isPlayer _x) then {
+							if !(isNil {_x getVariable (str _deadMan)}) then {
+								_x removeAction (_x getVariable (str _deadMan));
+								_x setVariable [str _deadMan, nil];
+							};
+						};
+					};
+				};
 			};
 			sleep 0.01;
 		} forEach allUnits;
@@ -170,17 +194,9 @@ unitReviveBodyAction = {
 	};
 };
 
-//[] spawn {
-//	while {true} do {
-//		{
-//			if (lifeState _x == "INCAPACITATED") then {
-//				sleep 2;
-//				[man_3, _x] call unitReviveBody;
-//			};
-//		} forEach allUnits;
-//		sleep 1;
-//	};
-//};
+player addAction ["All units self-revive", {
+	(allUnits select {lifeState _x == "INCAPACITATED"}) apply {_x spawn unitSelfRevive};
+}, nil, 10, false, true];
 
 player addAction ["Start revive loop", {
 	{
