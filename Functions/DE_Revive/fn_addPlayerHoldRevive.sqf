@@ -18,7 +18,8 @@
 	nil,
 	{ //action complete
 		(_this # 0) setVariable ["DE_REVIVING", nil, true];
-		[_this # 0, false] call DREAD_fnc_unitSetReviveState;
+		//[_this # 0, false] call DREAD_fnc_unitSetReviveState;
+		[_this # 0, false] remoteExec ["DREAD_fnc_unitSetReviveState", _this # 0];
 		(_this # 0) setDamage 0;
 		(_this # 1) playMoveNow "AinvPknlMstpSnonWnonDnon_medicEnd";
 	},
@@ -27,7 +28,7 @@
 		(_this # 1) playMoveNow "AinvPknlMstpSnonWnonDnon_medicEnd"
 	},
 	nil,
-	14,
+	2,
 	1000,
 	true,
 	true,

@@ -1,3 +1,5 @@
+waitUntil {time > 0};
+
 [] spawn {
 	private ["_deadMan","_actionIndex"];
 	while {true} do {
@@ -9,7 +11,7 @@
 						if (isNil {_x getVariable (str _deadMan)}) then {
 							if (_x distance _deadMan < 50) then {
 								//systemChat format ["Creating revive for %1", name _deadMan];
-								_actionIndex = _x addAction [format ["Revive %1", name _deadMan], unitReviveBodyAction, _deadMan, 1000, false, true, "", "!(isPlayer _this)"];
+								_actionIndex = _x addAction [format ["Revive %1", name _deadMan], DREAD_fnc_unitReviveBodyAction, _deadMan, 1000, false, true, "", "!(isPlayer _this)"];
 								_x setVariable [str _deadMan, _actionIndex];
 							};
 						} else {
@@ -67,23 +69,15 @@ player addAction ["Kill player", {
 	};
 };
 
-addMissionEventHandler ["Draw3D", {
-	private ["_icon","_color"];
-	allUnits apply {
-		if (lifeState _x == "INCAPACITATED") then {
-			_icon = "a3\ui_f\data\igui\cfg\holdactions\holdaction_revivemedic_ca.paa";
-			_color = [1,0,0,1];
-			if (!isNil {_x getVariable "DE_REVIVING"}) then {
-				_icon = "a3\ui_f\data\igui\cfg\holdactions\holdaction_revive_ca.paa";
-				_color = [1,1,0,1];
-			};
-			drawIcon3D [_icon, _color, ASLToAGL (aimPos _x), 1, 1, 1, "", true, 0, "RobotoCondensed", "", true];
-		};
-	};
-}];
+addMissionEventHandler ["Draw3D", DREAD_fnc_draw3DMissionEventHandler];
 
-[player, man, man_1, man_2, man_3] apply { _x call DREAD_fnc_addRevive};
-[man, man_1, man_2] apply { _x setDamage 0.99; _x setVelocityModelSpace [0,0,-7] };
-player addAction ["View icons", DREAD_fnc_showActioniconsDialog, nil, 10, false, true];
+if (isServer) then {
+	[player, man, man_1, man_2, man_3] apply {
+		_x call DREAD_fnc_addRevive;
+	};
+	//sleep 0.5;
+	[man, man_1, man_2] apply { _x setDamage 0.99; [_x,[0,0,-8]] remoteExec ["setVelocityModelSpace", _x]; };
+};
+//player addAction ["View icons", DREAD_fnc_showActioniconsDialog, nil, 10, false, true];
 
 player addRating 9001;

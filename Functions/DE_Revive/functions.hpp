@@ -6,4 +6,6 @@ class DE_Revive {
 	class unitReviveBodyAction {};
 	class unitSelfRevive {};
 	class unitSetReviveState {};
+	class handleDamageEventHandler {};
+	class draw3DMissionEventHandler {};
 }
