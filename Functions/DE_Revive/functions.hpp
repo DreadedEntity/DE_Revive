@@ -8,4 +8,6 @@ class DE_Revive {
 	class unitSetReviveState {};
 	class handleDamageEventHandler {};
 	class draw3DMissionEventHandler {};
+	class startDraw3DEventHandler {};
+	class startGroupReviveActionManagerLoop {};
 }

@@ -1,51 +1,13 @@
 waitUntil {time > 0};
 
-[] spawn {
-	private ["_deadMan","_actionIndex"];
-	while {true} do {
-		{
-			if (lifeState _x == "INCAPACITATED") then {
-				_deadMan = _x;
-				(units player) apply {
-					if !(isPlayer _x) then {
-						if (isNil {_x getVariable (str _deadMan)}) then {
-							if (_x distance _deadMan < 50) then {
-								//systemChat format ["Creating revive for %1", name _deadMan];
-								_actionIndex = _x addAction [format ["Revive %1", name _deadMan], DREAD_fnc_unitReviveBodyAction, _deadMan, 1000, false, true, "", "!(isPlayer _this)"];
-								_x setVariable [str _deadMan, _actionIndex];
-							};
-						} else {
-							if (_x distance _deadMan > 50) then {
-								//systemChat "removed";
-								_x removeAction (_x getVariable (str _deadMan));
-								_x setVariable [str _deadMan, nil];
-							};
-						};
-					};
-				};
-			} else {
-				_deadMan = _x;
-				if (lifeState _x == "HEALTHY" || lifeState _x == "INJURED") then {
-					(units player) apply {
-						if !(isPlayer _x) then {
-							if !(isNil {_x getVariable (str _deadMan)}) then {
-								_x removeAction (_x getVariable (str _deadMan));
-								_x setVariable [str _deadMan, nil];
-							};
-						};
-					};
-				};
-			};
-			sleep 0.01;
-		} forEach allUnits;
-		sleep 1;
-	};
-};
-
+//Self revive EXAMPLE
 player addAction ["All units self-revive", {
-	(allUnits select {lifeState _x == "INCAPACITATED"}) apply {_x spawn DREAD_fnc_unitSelfRevive};
+	(allUnits select {lifeState _x == "INCAPACITATED"}) apply {
+		_x remoteExec ["DREAD_fnc_unitSelfRevive", _x];
+	};
 }, nil, 10, false, true];
 
+//Automatic squad reviving EXAMPLE - use this to create a much more robust system
 player addAction ["Start revive loop", {
 	{
 		if (lifeState _x == "INCAPACITATED") then {
@@ -58,6 +20,7 @@ player addAction ["Kill player", {
 	player setVelocityModelSpace [0,0,-10];
 }, nil, 9, false, true];
 
+//EXAMPLE loop of NPC reviving player every time he goes down
 [] spawn {
 	while {true} do {
 		if (lifeState player == "INCAPACITATED") then {
@@ -69,7 +32,9 @@ player addAction ["Kill player", {
 	};
 };
 
-addMissionEventHandler ["Draw3D", DREAD_fnc_draw3DMissionEventHandler];
+//addMissionEventHandler ["Draw3D", DREAD_fnc_draw3DMissionEventHandler];
+call DREAD_fnc_startDraw3DEventHandler;
+call DREAD_fnc_startGroupReviveActionManagerLoop;
 
 if (isServer) then {
 	[player, man, man_1, man_2, man_3] apply {
