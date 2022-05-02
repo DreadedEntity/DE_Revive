@@ -3,4 +3,5 @@ class Helpers {
 	class fixCapitalization {};
 	class getLastNameOrPlayername {};
 	class getRankAndName {};
+	class createUnitHere {};
 }

@@ -1,3 +1,8 @@
+/////////////////////////////////////
+// Function file for Armed Assault //
+//    Created by: DreadedEntity    //
+/////////////////////////////////////
+
 waitUntil {time > 0};
 
 //Self revive EXAMPLE
@@ -20,6 +25,11 @@ player addAction ["Kill player", {
 	player setVelocityModelSpace [0,0,-10];
 }, nil, 9, false, true];
 
+//EXAMPLE - Spawn unit and add revive ability (locality is Server/Dedi)
+player addAction ["Create remote unit", {
+	(player getRelPos [5, 0]) remoteExec ["DREAD_fnc_createUnitHere", 2];
+}, nil, 10, false, true];
+
 //EXAMPLE loop of NPC reviving player every time he goes down
 [] spawn {
 	while {true} do {
@@ -34,15 +44,5 @@ player addAction ["Kill player", {
 
 //addMissionEventHandler ["Draw3D", DREAD_fnc_draw3DMissionEventHandler];
 call DREAD_fnc_startDraw3DEventHandler;
-call DREAD_fnc_startGroupReviveActionManagerLoop;
+[] spawn DREAD_fnc_startGroupReviveActionManagerLoop;
 
-if (isServer) then {
-	[player, man, man_1, man_2, man_3] apply {
-		_x call DREAD_fnc_addRevive;
-	};
-	//sleep 0.5;
-	[man, man_1, man_2] apply { _x setDamage 0.99; [_x,[0,0,-8]] remoteExec ["setVelocityModelSpace", _x]; };
-};
-//player addAction ["View icons", DREAD_fnc_showActioniconsDialog, nil, 10, false, true];
-
-player addRating 9001;
